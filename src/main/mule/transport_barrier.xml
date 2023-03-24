@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="b2c7026e-72d8-40cd-88d3-ee7493923759" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="Transport_Barrier" doc:id="579059b5-d6d4-433b-871c-f323ee11e331" >
+		<http:listener doc:name="Listener" doc:id="3900ffbe-831a-4805-8f80-691c0a040f8c" config-ref="HTTP_Listener_config" path="/transpor_barrier"/>
+		<logger level="INFO" doc:name="Logger" doc:id="f4233f69-821b-42e9-a650-a0fb516bf518" message="#[payload]"/>
+		<set-variable value="flow1 and flow2" doc:name="flow1" doc:id="fd3e0fc6-0de5-4c7d-abe9-0655e4a7eb20" variableName="flow1"/>
+		<logger level="INFO" doc:name="queryParams" doc:id="3afe0bc2-35aa-49a3-bd51-6a1ad17424c3" message="#[attributes.queryParams.city]"/>
+		<flow-ref doc:name="Flow Reference" doc:id="7569a394-d2ea-4128-9423-63f76fe77797" name="queryParams_are_null_after_Transport_Barrier(request-http)"/>
+		<logger level="INFO" doc:name="Logger" doc:id="e256467f-b39e-4ea2-b502-ee86e3153f3f" message='#["first flow variable :::" ++ vars.flow1]'/>
+	</flow>
+	<flow name="queryParams_are_null_after_Transport_Barrier(request-http)" doc:id="de23fbe1-b276-4483-96e2-bb05ac47bd67" >
+		<http:request method="GET" doc:name="Request" doc:id="a7ead51e-2ca1-4471-8fa4-276ec48436a2" url="https://reqres.in/api/users">
+		</http:request>
+		<logger level="INFO" doc:name="Logger" doc:id="f08836e8-8fee-46f3-8ab5-c55a9904f65a" message="inside flow 2"/>
+		<set-variable value="flow1 and flow2" doc:name="flow2" doc:id="0144f7cb-d936-4fa8-b3bb-dc6920a03eb5" variableName="flow2"/>
+		<logger level="INFO" doc:name="Logger" doc:id="34b54788-a1a3-4e92-9b29-bc423aa429a5" message='#["second dlow variable" ++ vars.flow2]'/>
+		<logger level="INFO" doc:name="queryParams" doc:id="531c3485-36c3-4dfa-b1df-c49d55fec0f6" message="#[attributes.queryParams]"/>
+	</flow>
+</mule>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="ec0f0c26-0be0-4bae-a7cd-a1bff8faed7b" />
+	<flow name="Idempotent_Receiver(Redundancy)Flow" doc:id="39a22f6f-2e51-4c42-a8c9-ef99009ca766" >
+		<http:listener doc:name="Listener" doc:id="b182bd14-c046-4ef8-9593-344e21e42ec0" config-ref="HTTP_Listener_config" path="/main"/>
+		<logger level="INFO" doc:name="Logger" doc:id="49f9dfa4-de6d-43d0-8843-015647283d39" message="#[payload]"/>
+		<idempotent-message-validator doc:name="Idempotent Message Validator" doc:id="0448ea15-07a4-496b-94ab-4f83981e5e93" idExpression="#[payload.orders.orderId ++ payload.orders.orderType ++ payload.customers.customerId]" objectStore="Object_store"/>
+		<ee:transform doc:name="Transform Message" doc:id="ae879d1d-2c64-4590-a954-66b687b33321" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Status":"Success",
+	"message":"Order created succesfully, Thankyou for showing intrest on us :::: Keep shopping"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="Idempotent_Receiver(Redundancy)Flow1" doc:id="c99caaf7-e8bf-4fd0-a8d7-a20557f44148" >
+		<http:listener doc:name="Listener" doc:id="297a6fe8-0fdf-4ad4-bc15-778499f13757" config-ref="HTTP_Listener_config" path="/idempotent"/>
+		<ee:transform doc:name="input payload" doc:id="08f97ca1-2aed-424b-8594-64cdd764e4c8">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "orders":{
+        "orderId":9876543,
+        "orderType":"created"
+    },
+    "customers":{
+        "customerId":123456,
+        "cust_Name":"Alluru Yathendra"
+    },
+    "Items":{
+        "item":"iphone",
+        "itemType":"Mobile",
+        "Qty":1,
+        "price":150000
+    },
+    "Address":{
+        "H.no":678,
+        "street":"AP0",
+        "City":"venkatagiri"
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="82c2c3ca-4000-4a60-b6c9-b1d74e60c0b8" config-ref="HTTP_Request_configuration" path="/main"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="902c8088-81da-4e5f-abb2-0d85ae32bb2e" >
+				<logger level="INFO" doc:name="Logger" doc:id="4c1bbef6-7134-4682-97cb-b45c2e38fe03" message="Error Occured :::: #[correlationId]"/>
+				<ee:transform doc:name="Transform Message" doc:id="bde0d50e-f43f-4b6c-bd60-b026d1a4f43d" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":"Error",
+	"message":"Duplicate request received please check the below field once",
+	"fields":{
+		"OrdersId":payload.orders.orderId,
+		"OrderType":payload.orders.orderType,
+		"CustomerId":payload.customers.customerId
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="Idempotent_Receiver(Redundancy)Flow2" doc:id="eaa06c0b-e39d-4a2c-8784-72846a4f7a9d" >
+		<http:listener doc:name="Listener" doc:id="f40a41c3-6da2-4072-8fa5-51c084ca47bd" config-ref="HTTP_Listener_config" path="/idempotent1"/>
+		<ee:transform doc:name="input payload" doc:id="b5255cb8-cc73-4daa-8ded-4e53365f7aff" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "orders":{
+        "orderId":9876543,
+        "orderType":"updated"
+    },
+    "customers":{
+        "customerId":123456,
+        "cust_Name":"Alluru Yathendra"
+    },
+    "Items":{
+        "item":"iphone",
+        "itemType":"Mobile",
+        "Qty":1,
+        "price":150000
+    },
+    "Address":{
+        "H.no":678,
+        "street":"AP0",
+        "City":"venkatagiri"
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="e97bfed1-3f9b-462a-8447-a67045d10bbe" config-ref="HTTP_Request_configuration" path="/main"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="0afff1b8-58cc-421b-8d73-13d958abb59a" >
+				<logger level="INFO" doc:name="Logger" doc:id="28901bb3-ad81-4116-85c5-7783ddb3f2f4" message="Error Occured :::: #[correlationId]"/>
+				<ee:transform doc:name="Transform Message" doc:id="b1b57747-3d53-4bad-98fe-2bdedc2c3976" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":"Error",
+	"message":"Duplicate request received please check the below field once",
+	"fields":{
+		"OrdersId":payload.orders.orderId,
+		"OrderType":payload.orders.orderType,
+		"CustomerId":payload.customers.customerId
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="Idempotent_Receiver(Redundancy)Flow3" doc:id="bca28e48-2470-4a8b-a8b1-5f8f2e6b064f" >
+		<http:listener doc:name="Listener" doc:id="a4239db0-26d9-4142-a7a5-46efde3a0551" config-ref="HTTP_Listener_config" path="/idempotent2"/>
+		<ee:transform doc:name="input payload" doc:id="ea39bc59-06ae-49ba-976f-5dca548d246c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "orders":{
+        "orderId":9876543,
+        "orderType":"created"
+    },
+    "customers":{
+        "customerId":999999,
+        "cust_Name":"Alluru Yathendra"
+    },
+    "Items":{
+        "item":"iphone",
+        "itemType":"Mobile",
+        "Qty":1,
+        "price":150000
+    },
+    "Address":{
+        "H.no":678,
+        "street":"AP0",
+        "City":"venkatagiri"
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="3d4e69cf-5478-4849-a2d3-d05d0c242578" config-ref="HTTP_Request_configuration" path="/main"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="6d22dfe3-e9ee-414a-aa19-aff5b539819f" >
+				<logger level="INFO" doc:name="Logger" doc:id="76c337ee-77db-4159-b2a1-e9ba7c0a384e" message="Error Occured :::: #[correlationId]"/>
+				<ee:transform doc:name="Transform Message" doc:id="9fbabccf-4d0d-4781-85c2-2cd371d9915b" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":"Error",
+	"message":"Duplicate request received please check the below field once",
+	"fields":{
+		"OrdersId":payload.orders.orderId,
+		"OrderType":payload.orders.orderType,
+		"CustomerId":payload.customers.customerId
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

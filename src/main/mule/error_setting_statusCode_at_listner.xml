@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="918efa25-3ec6-437a-b537-143b47072b87" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Raghava$777" database="myfirstdb" />
+	</db:config>
+	<flow name="systemApi" doc:id="788850aa-b3dd-47a6-9d29-5c367a6fe7f0" >
+		<http:listener doc:name="statusCode set in responses" doc:id="911d2433-7a9f-4b49-81ac-c12f692e7ae0" config-ref="HTTP_Listener_config" path="/systemApi">
+			<http:response statusCode="#[vars.statusCode]" />
+		</http:listener>
+		<ee:transform doc:name="Transform Message" doc:id="4e512456-eb42-4654-ae40-873c252079d5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"name":"raghava"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:select doc:name="Select" doc:id="550584f2-be83-4421-a7c7-203cb7eab844" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from json]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="fetching json payload from db" doc:id="d91009a6-4f6a-46f3-97d1-98b62a2a5c52" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map(read($.data))]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c214e20c-ca51-447e-9e44-4e9ed16f90c7" >
+				<logger level="INFO" doc:name="Logger" doc:id="5cfcb9a1-2f2b-4bfd-ba36-159a63bf7f37" message='error_Encountered in systemApi'/>
+				<ee:transform doc:name="statusCode set in variable" doc:id="e788d9a2-ac67-43b2-8fd1-5722ff8814bf" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Result":"Error",
+	"errorType":error.errorType.namespace as String ++ ":" ++ error.errorType.identifier as String,
+	"Description":error.description
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="statusCode" ><![CDATA[%dw 2.0
+output application/json
+---
+500]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="experienceApi_calling_SysytemAPI" doc:id="8955fe55-25c0-4d29-bc34-5cc1e257ab15" >
+		<http:listener doc:name="Listener" doc:id="715e9e17-7b01-47ac-b0fc-9579ac80a477" config-ref="HTTP_Listener_config" path="/experienceApi">
+			<http:response statusCode="#[vars.statusCode]" />
+		</http:listener>
+		<http:request method="GET" doc:name="Request" doc:id="65cabac7-e429-4504-b522-b6db7903bca4" config-ref="HTTP_Request_configuration" path="/systemApi"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="d1b83038-3daa-48c8-bab9-8092219d3d90" >
+				<logger level="INFO" doc:name="Logger" doc:id="f50521b2-81b7-4528-8f32-9348001596d3" message="error encounterd in experienceApi"/>
+				<ee:transform doc:name="Transform Message" doc:id="a97f5482-c40f-4088-90e5-686b77f79148" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"Result":"error",
+	"message":"Sorry for incovenience please try back after sometime"
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="statusCode" ><![CDATA[%dw 2.0
+output application/json
+---
+500]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

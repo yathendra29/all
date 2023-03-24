@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="b98bf971-4b8d-4e36-afb1-5f4db32024cd" >
+		<http:request-connection host="localhost" port="8081" />
+	</http:request-config>
+	<flow name="Error_MappingFlow" doc:id="f5461ac7-019d-4be5-ade1-456ba5e53685" >
+		<http:listener doc:name="Listener" doc:id="59c6f52c-c8d7-4fe8-bc8f-a0068ee6a665" config-ref="HTTP_Listener_config" path="/serverA"/>
+		<ee:transform doc:name="Transform Message" doc:id="7d2817fb-42b2-4cce-b4d0-ff39fe00077c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"msg":"server A"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="48d94a8c-b0a1-4fbb-ba5d-a911bb63f368" message="#[payload]"/>
+	</flow>
+	<flow name="Error_MappingFlow2" doc:id="229cdedf-0143-4738-b8aa-57338748b303" >
+		<http:listener doc:name="Listener" doc:id="f7d3d24e-285b-4cd3-88dc-47247dd01959" config-ref="HTTP_Listener_config" path="/serverB"/>
+		<ee:transform doc:name="Transform Message" doc:id="8437d828-abaf-4f63-9b12-6609d2e7d87e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"msg":"server B"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="a696fa65-aece-416f-839a-a9bb837805dd" message="#[payload]"/>
+	</flow>
+	<flow name="Error_MappingFlow1" doc:id="e7634034-d8c1-40b9-b136-dee3d6c16a8d" >
+		<http:listener doc:name="Listener" doc:id="7895b8b1-6782-41c6-96a3-db29695d644c" config-ref="HTTP_Listener_config" path="/request"/>
+		<choice doc:name="Choice" doc:id="e5524728-2ace-4f31-860b-0b6eaa7c0eef" >
+			<when expression='#[payload.msg=="server A"]'>
+				<http:request method="GET" doc:name="Request" doc:id="9233e274-6c8d-4ffe-b441-f92954054283" config-ref="HTTP_Request_configuration" path="/serverA"/>
+			</when>
+			<otherwise>
+				<http:request method="GET" doc:name="Request" doc:id="dfff935f-8253-4fb7-bd30-df4b1f4312ab" config-ref="HTTP_Request_configuration" path="/serverb" responseTimeout="10000">
+			<error-mapping sourceType="HTTP:NOT_FOUND" targetType="CUSTOM:ERROR" />
+		</http:request>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="3d23b292-eff9-442e-b803-ef5b6b99e93f" message="afterREquest::: #[payload]"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="8a3e10af-30c2-42ab-92cb-18c516a92af4" type="HTTP:NOT_FOUND">
+				<logger level="INFO" doc:name="Logger" doc:id="6fb0bbcf-3935-451c-b2e8-e10fdb0a1594" message="#[error.description]"/>
+			</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="5179eed7-1c19-4009-baa6-34564068261d" type="CUSTOM:ERROR">
+				<logger level="INFO" doc:name="Logger" doc:id="e4aa71ac-8988-411a-b7cd-60d067bdfbe9" message="#[error.description]"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

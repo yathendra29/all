@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="Data_Type_Channel" doc:id="3109f12d-50e9-4401-b892-67da5339f6d6" >
+		<http:listener doc:name="Listener" doc:id="858995f6-3161-4e4d-8174-b335c2a4a879" config-ref="HTTP_Listener_config" path="/dataTypeChannel"/>
+		<ee:transform doc:name="input" doc:id="299aeb11-b093-4e67-a521-3e4702b66018" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="product" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"SKU":123,
+	"product":"Iphone-14 mobile with insurance"
+}]]></ee:set-variable>
+				<ee:set-variable variableName="price" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"SKU":123,
+	"price":120000
+}]]></ee:set-variable>
+				<ee:set-variable variableName="quantity" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"SKU":123,
+	"qty":1
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<set-payload value="#[payload]" doc:name="change variables on TF and check" doc:id="261c7aed-4058-4826-9893-5469e6b0f26f" />
+		<choice doc:name="Choice" doc:id="6625f54f-e485-49bb-b2f8-8f95d1f6daea" >
+			<when expression="#[!isEmpty(payload.price)]">
+				<ee:transform doc:name="Transform Message" doc:id="690374c2-0395-4219-a1e9-440273e392ee">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"result":"price",
+	"content":vars.price
+	}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<when expression="#[!isEmpty(payload.quantity)]">
+				<ee:transform doc:name="Transform Message" doc:id="bb18f6c5-531f-4784-b238-89f4fb863b66" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"result":"Quantity",
+	"content":vars.quantity
+	}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise>
+				<ee:transform doc:name="Transform Message" doc:id="22d89513-64ba-47c7-8cab-214bfbfeaa99">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"result":"product",
+	"content":vars.product
+	}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="Channel_Based_Routing" doc:id="24d0e7c1-019d-4efd-8c77-e942d7b610db" >
+		<http:listener doc:name="Channel_Based_Routing" doc:id="b2c64055-4ad9-4bba-9bbd-70a7365cb5cd" config-ref="HTTP_Listener_config" path="/ChannelBasedRouting"/>
+		<ee:transform doc:name="Transform Message" doc:id="2c608330-2e8c-4285-9fa4-b6cab9edfa83" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="hyd" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"SKU":124,
+	"qty":10,
+	"price":5000,
+	"location":"Hyderabad"
+}]]></ee:set-variable>
+				<ee:set-variable variableName="bnglr" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"SKU":124,
+	"qty":20,
+	"price":5000,
+	"location":"Bangalore"
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<set-payload value="#[vars.bnglr]" doc:name="change the variable here and check" doc:id="9bc2d022-557e-404d-b3b4-d461db4dc31c" />
+		<choice doc:name="Choice" doc:id="40352a21-bfee-40b6-a470-841674df8722" >
+			<when expression='#[payload.location=="Hyderabad"]'>
+				<ee:transform doc:name="Transform Message" doc:id="8e6b7ce1-db78-4c49-a800-4ea384acd2bf" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":vars.hyd,
+	"TotalAmount":payload.price * payload.qty,
+	"20%Discount":(payload.price * (20/100)) * payload.qty,
+	"AmountAfterDiscount": (payload.price * payload.qty) - ((payload.price * (20/100)) * payload.qty)
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="205e5741-fd42-4a00-8114-6990edce998d" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":vars.bnglr,
+	"TotalAmount":payload.price * payload.qty,
+	"20%Discount":(payload.price * (10/100)) * payload.qty,
+	"AmountAfterDiscount": (payload.price * payload.qty) - ((payload.price * (10/100)) * payload.qty)
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

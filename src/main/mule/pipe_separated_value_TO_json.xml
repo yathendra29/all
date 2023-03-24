@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="682108d7-8f1e-4058-b51c-9c68832febd7" />
+	<flow name="PSV_to_JSON" doc:id="3f6c1ce2-bc73-4671-bc8a-88f63d3196e5" >
+		<file:listener doc:name="On New or Updated File" doc:id="b63d477d-1412-4341-aa4a-97a45a20b635" config-ref="File_Config" directory="D:\sample" outputMimeType="application/csv; separator=|" watermarkMode="MODIFIED_TIMESTAMP">
+			<scheduling-strategy >
+				<fixed-frequency startDelay="500"/>
+			</scheduling-strategy>
+		</file:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="05319492-779d-4a77-b7de-8a6f24a3b66c" message="#[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="5a1019e0-211e-4b31-8c27-eb3b79e57a4c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+input payload application/csv separator = '|'
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	std_id: payload01.id,
+	name: payload01.Name,
+	age: payload01.Age,
+	gender: payload01.Gender,
+	doj: payload01.DOJ as String,
+	city: payload01.City
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="8749459c-f401-4a21-8ea1-8f6d6d598c0d" message="#[payload]"/>
+	
+</flow>
+	</mule>

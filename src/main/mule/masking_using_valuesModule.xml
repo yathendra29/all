@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="masking_using_valuesModuleFlow" doc:id="287844b3-5216-43b3-b741-90ae6795fd38" >
+		<http:listener doc:name="Listener" doc:id="793cb697-054b-4a28-860d-2b9e1bf43245" config-ref="HTTP_Listener_config" path="/masking"/>
+		<ee:transform doc:name="Transform Message" doc:id="a7a365dc-f9fd-4b23-92de-243fce2c9e39" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"name":"yathendra",
+	"acc_id":123456,
+	"email":"yathi@gmail.com",
+	"ph":999999
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="68b5b139-954d-4d18-9b87-02495f7c7357" message="before Masking::  #[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="7b1b844f-06bf-412d-8e2a-1ed801c05db3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::util::Values
+output application/json
+---
+
+payload mask field("acc_id") with "*******"
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="masking_two_fields_using_valuesModule" doc:id="3a848850-84d0-4a97-a413-82f23448f814" >
+		<http:listener doc:name="Listener" doc:id="a697cc04-8a58-461f-b1e0-ef40ad0ef430" config-ref="HTTP_Listener_config" path="/masking1"/>
+		<ee:transform doc:name="Transform Message" doc:id="85797c47-5404-4c4b-955f-9162fbe094c3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"name":"yathendra",
+	"acc_id":123456,
+	"email":"yathi@gmail.com",
+	"ph":999999
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="4af18549-b171-42cd-9633-595f9bd2bcc4" message="before Masking::  #[payload]"/>
+		<ee:transform doc:name="Transform Message" doc:id="80d8d984-9747-465b-ad6b-c4892af03a46" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import * from dw::util::Values
+output application/json
+---
+
+(payload mask field("acc_id") with "*******") mask field("ph") with "###########"
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	
+</mule>

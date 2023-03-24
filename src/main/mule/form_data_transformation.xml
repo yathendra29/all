@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="at_a_time_json_xml_and_file_coming_from_postMan" doc:id="0d2b3353-3d64-424c-a97d-c8b91833cd5e" >
+		<http:listener doc:name="Listener" doc:id="262e40d6-8d39-48ce-956b-ebc832c1091f" config-ref="HTTP_Listener_config" path="/form"/>
+		<ee:transform doc:name="used aplication/dw but it is not recomended to use" doc:id="1bc24bf4-f57c-4973-b70e-bfcfdaa6fa50" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/dw
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="d87b2fc4-3c5f-4527-89fb-54ca5974c9d4" message="#[payload..*content]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="c7f10f23-efa2-4594-9251-7e2a893f9e70" message="#[(read(payload.parts.payload1.content,'application/json')).name]"/>
+		<ee:transform doc:name="Transform Message" doc:id="cd246309-0375-4f30-84e9-d181fafa23d2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+read(payload.parts.payload1.content,'application/json')]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
